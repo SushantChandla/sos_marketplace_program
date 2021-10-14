@@ -16,6 +16,7 @@ pub struct TokenData {
     pub uri:String,
     pub abilities: Vec<Ability>,
     pub mint_id: Pubkey,
+    pub owner: Pubkey,
     pub metadata_at: Pubkey,
 }
 

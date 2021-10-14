@@ -7,6 +7,7 @@ use solana_program::{
 };
 mod buy_nft_token;
 mod cancel_nft_token;
+mod upgrade_nft_token;
 fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -33,9 +34,11 @@ fn process_instruction(
             accounts,
             &instruction_data[1..instruction_data.len()],
         ),
-        4 => Ok(()),
-        5 => Ok(()),
-        6 => Ok(()),
+        4 => upgrade_nft_token::upgrade_nft_token(
+            program_id,
+            accounts,
+            &instruction_data[1..instruction_data.len()],
+        ),
         _ => {
             return Err(ProgramError::InvalidInstructionData);
         }

@@ -24,6 +24,8 @@ pub fn but_nft_token(
     let token_program_id = next_account_info(accounts_iter)?;
     let source_account = next_account_info(accounts_iter)?;
 
+    let owners_account = next_account_info(accounts_iter)?;
+
     if writing_account.owner != program_id || pay_with.owner != program_id {
         msg!("Writter account or pay_with isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
@@ -47,14 +49,28 @@ pub fn but_nft_token(
         msg!("Insufficent balance");
         return Err(ProgramError::InsufficientFunds);
     }
+    if data_present.owner == *signer.key {
+        msg!("You can use cancel button");
+        return Err(ProgramError::InvalidAccountData);
+    }
 
-    let instruction = spl_token::instruction::transfer(
+    if **pay_with.try_borrow_lamports()? != data_present.price as u64 {
+        msg!("Not enough lamport");
+        return Err(ProgramError::InsufficientFunds);
+    }
+
+    if data_present.owner != *owners_account.key {
+        msg!("Wrong owners account");
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    let instruction = spl_token::instruction::set_authority(
         token_program_id.key,
         source_account.key,
-        signer.key,
-        &writing_account.key,
-        &[],
-        1,
+        Some(signer.key),
+        spl_token::instruction::AuthorityType::AccountOwner,
+        writing_account.key,
+        &[writing_account.key],
     )?;
     invoke_signed(
         &instruction,
@@ -67,6 +83,10 @@ pub fn but_nft_token(
         &[&["carddata".as_bytes()]],
     )?;
 
+    **owners_account.try_borrow_mut_lamports()? += **pay_with.try_borrow_lamports()?;
+    **pay_with.try_borrow_mut_lamports()? = 0;
+
+    data_present.owner = *signer.key;
     data_present.serialize(&mut &mut writing_account.data.borrow_mut()[..])?;
     Ok(())
 }
