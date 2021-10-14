@@ -6,7 +6,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
-    program::invoke_signed,
+    program::{invoke, invoke_signed},
     program_error::ProgramError,
     pubkey::Pubkey,
 };
@@ -19,9 +19,10 @@ pub fn create_nft_token(
     let accounts_iter = &mut accounts.iter();
     let writing_account = next_account_info(accounts_iter)?;
     let signer = next_account_info(accounts_iter)?;
-    let metadata_account_program = next_account_info(accounts_iter)?;
+    let metadata_program = next_account_info(accounts_iter)?;
     let metadata_account = next_account_info(accounts_iter)?;
     let mint = next_account_info(accounts_iter)?;
+    let spl_token_account = next_account_info(accounts_iter)?;
     let system_account = next_account_info(accounts_iter)?;
     let rent_account = next_account_info(accounts_iter)?;
 
@@ -48,8 +49,18 @@ pub fn create_nft_token(
     let mut input_data =
         TokenData::try_from_slice(instruction_data).expect("Failed to convert the input data");
 
+    let set_update_auth = spl_token::instruction::set_authority(
+        spl_token_account.key,
+        signer.key,
+        Some(writing_account.key),
+        spl_token::instruction::AuthorityType::AccountOwner,
+        signer.key,
+        &[signer.key],
+    )?;
+    invoke(&set_update_auth, &[spl_token_account.to_owned()])?;
+
     let instruction_for_metadata = spl_token_metadata::instruction::create_metadata_accounts(
-        *metadata_account_program.key,
+        *metadata_program.key,
         input_data.metadata_at,
         input_data.mint_id,
         *writing_account.key,
@@ -78,7 +89,7 @@ pub fn create_nft_token(
     invoke_signed(
         &instruction_for_metadata,
         &[
-            metadata_account_program.to_owned(),
+            metadata_program.to_owned(),
             metadata_account.to_owned(),
             mint.to_owned(),
             writing_account.to_owned(),
@@ -97,5 +108,3 @@ pub fn create_nft_token(
     input_data.serialize(&mut &mut writing_account.data.borrow_mut()[..])?;
     Ok(())
 }
-
-

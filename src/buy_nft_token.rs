@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -58,8 +60,16 @@ pub fn but_nft_token(
         msg!("Not enough lamport");
         return Err(ProgramError::InsufficientFunds);
     }
+    let admin1 = Pubkey::from_str("3KNyVqUuQkfr2V1BAShtYfcZiREyVaPTtjPAQfbZSUV2")
+        .expect("Failed to convert the pub key admin1");
 
-    if data_present.owner != *owners_account.key {
+    let admin2 = Pubkey::from_str("DGqXoguiJnAy8ExJe9NuZpWrnQMCV14SdEdiMEdCfpmB")
+        .expect("Failed to convert the pub key admin2");
+
+    if data_present.owner != *owners_account.key
+        || data_present.owner != admin1
+        || data_present.owner != admin2
+    {
         msg!("Wrong owners account");
         return Err(ProgramError::InvalidAccountData);
     }
@@ -82,7 +92,7 @@ pub fn but_nft_token(
         ],
         &[&["carddata".as_bytes()]],
     )?;
-    
+
     **owners_account.try_borrow_mut_lamports()? += **pay_with.try_borrow_lamports()?;
     **pay_with.try_borrow_mut_lamports()? = 0;
 
