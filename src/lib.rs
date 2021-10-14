@@ -49,7 +49,6 @@ entrypoint!(process_instruction);
 // Sanity tests
 #[cfg(test)]
 mod test {
-
     #[test]
     fn test_sanity() {}
 }

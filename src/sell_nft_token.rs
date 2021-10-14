@@ -57,5 +57,6 @@ pub fn sell_nft_token(
     data_present.is_for_sale = true;
     data_present.price = input_data.0;
     input_data.serialize(&mut &mut writing_account.data.borrow_mut()[..])?;
+    
     Ok(())
 }

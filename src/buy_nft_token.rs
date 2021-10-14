@@ -82,7 +82,7 @@ pub fn but_nft_token(
         ],
         &[&["carddata".as_bytes()]],
     )?;
-
+    
     **owners_account.try_borrow_mut_lamports()? += **pay_with.try_borrow_lamports()?;
     **pay_with.try_borrow_mut_lamports()? = 0;
 

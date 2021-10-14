@@ -10,7 +10,6 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
 };
-use spl_token_metadata::{instruction::create_metadata_accounts, state::Creator};
 
 pub fn create_nft_token(
     program_id: &Pubkey,
@@ -35,12 +34,13 @@ pub fn create_nft_token(
         msg!("Signer error");
         return Err(ProgramError::MissingRequiredSignature);
     }
-    
+
     let admin1 = Pubkey::from_str("3KNyVqUuQkfr2V1BAShtYfcZiREyVaPTtjPAQfbZSUV2")
         .expect("Failed to convert the pub key admin1");
+
     let admin2 = Pubkey::from_str("DGqXoguiJnAy8ExJe9NuZpWrnQMCV14SdEdiMEdCfpmB")
         .expect("Failed to convert the pub key admin2");
-    if *signer.key != admin1 || *signer.key != admin2 {
+    if !(*signer.key == admin1 || *signer.key == admin2) {
         msg!("Signer not admin");
         return Err(ProgramError::IllegalOwner);
     }
@@ -48,7 +48,7 @@ pub fn create_nft_token(
     let mut input_data =
         TokenData::try_from_slice(instruction_data).expect("Failed to convert the input data");
 
-    let instruction_for_metadata = create_metadata_accounts(
+    let instruction_for_metadata = spl_token_metadata::instruction::create_metadata_accounts(
         *metadata_account_program.key,
         input_data.metadata_at,
         input_data.mint_id,
@@ -59,13 +59,13 @@ pub fn create_nft_token(
         String::from("SOS"),
         input_data.uri.to_owned(),
         Some(vec![
-            Creator {
+            spl_token_metadata::state::Creator {
                 address: admin1,
                 share: 50,
                 verified: true,
             },
-            Creator {
-                address: admin1,
+            spl_token_metadata::state::Creator {
+                address: admin2,
                 share: 50,
                 verified: true,
             },
@@ -89,9 +89,13 @@ pub fn create_nft_token(
         ],
         &[&["carddata".as_bytes()]],
     )?;
-    msg!("invoke success");
+
     input_data.level = 1;
     input_data.is_for_sale = true;
+    input_data.owner = *signer.key;
+
     input_data.serialize(&mut &mut writing_account.data.borrow_mut()[..])?;
     Ok(())
 }
+
+

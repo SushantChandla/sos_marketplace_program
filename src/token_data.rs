@@ -1,6 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
-
+#[repr(C)]
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct TokenData {
     pub name: String,
@@ -19,7 +19,7 @@ pub struct TokenData {
     pub owner: Pubkey,
     pub metadata_at: Pubkey,
 }
-
+#[repr(C)]
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Ability {
     pub name: String,
