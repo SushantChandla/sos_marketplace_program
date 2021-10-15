@@ -17,7 +17,9 @@ pub fn upgrade_nft_token(
 ) -> ProgramResult {
     let accounts_iter = &mut accounts.iter();
     let writing_account1 = next_account_info(accounts_iter)?;
+    let token_account1 = next_account_info(accounts_iter)?;
     let writing_account2 = next_account_info(accounts_iter)?;
+    let token_account2 = next_account_info(accounts_iter)?;
     let signer_account = next_account_info(accounts_iter)?;
     let spl_token_account = next_account_info(accounts_iter)?;
     if writing_account1.owner != program_id || writing_account2.owner != program_id {
@@ -58,13 +60,21 @@ pub fn upgrade_nft_token(
 
     let burn_instruction = spl_token::instruction::close_account(
         spl_token_account.key,
-        writing_account1.key,
-        writing_account2.key,
+        token_account2.key,
+        token_account1.key,
         signer_account.key,
         &[signer_account.key],
     )?;
 
-    invoke(&burn_instruction, &[spl_token_account.to_owned()])?;
+    invoke(
+        &burn_instruction,
+        &[
+            spl_token_account.to_owned(),
+            writing_account1.to_owned(),
+            signer_account.to_owned(),
+            token_account1.to_owned()
+        ],
+    )?;
 
     data_present1.serialize(&mut &mut writing_account1.data.borrow_mut()[..])?;
     Ok(())

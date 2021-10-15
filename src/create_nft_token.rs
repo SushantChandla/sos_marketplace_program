@@ -6,7 +6,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
-    program::{invoke, invoke_signed},
+    program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
@@ -19,12 +19,8 @@ pub fn create_nft_token(
     let accounts_iter = &mut accounts.iter();
     let writing_account = next_account_info(accounts_iter)?;
     let signer = next_account_info(accounts_iter)?;
-    let metadata_program = next_account_info(accounts_iter)?;
-    let metadata_account = next_account_info(accounts_iter)?;
-    let mint = next_account_info(accounts_iter)?;
+    let token_account = next_account_info(accounts_iter)?;
     let spl_token_account = next_account_info(accounts_iter)?;
-    let system_account = next_account_info(accounts_iter)?;
-    let rent_account = next_account_info(accounts_iter)?;
 
     if writing_account.owner != program_id {
         msg!("Writter account isn't owned by program");
@@ -51,55 +47,24 @@ pub fn create_nft_token(
 
     let set_update_auth = spl_token::instruction::set_authority(
         spl_token_account.key,
-        signer.key,
+        token_account.key,
         Some(writing_account.key),
         spl_token::instruction::AuthorityType::AccountOwner,
         signer.key,
         &[signer.key],
     )?;
-    invoke(&set_update_auth, &[spl_token_account.to_owned()])?;
 
-    let instruction_for_metadata = spl_token_metadata::instruction::create_metadata_accounts(
-        *metadata_program.key,
-        input_data.metadata_at,
-        input_data.mint_id,
-        *writing_account.key,
-        *writing_account.key,
-        *writing_account.key,
-        String::from("Shadow of Stroms"),
-        String::from("SOS"),
-        input_data.uri.to_owned(),
-        Some(vec![
-            spl_token_metadata::state::Creator {
-                address: admin1,
-                share: 50,
-                verified: true,
-            },
-            spl_token_metadata::state::Creator {
-                address: admin2,
-                share: 50,
-                verified: true,
-            },
-        ]),
-        1000,
-        true,
-        true,
-    );
-
-    invoke_signed(
-        &instruction_for_metadata,
+    invoke(
+        &set_update_auth,
         &[
-            metadata_program.to_owned(),
-            metadata_account.to_owned(),
-            mint.to_owned(),
+            spl_token_account.to_owned(),
+            signer.to_owned(),
             writing_account.to_owned(),
-            writing_account.to_owned(),
-            writing_account.to_owned(),
-            system_account.to_owned(),
-            rent_account.to_owned(),
+            token_account.to_owned(),
         ],
-        &[&["carddata".as_bytes()]],
     )?;
+
+    msg!("set_update_auth passed");
 
     input_data.level = 1;
     input_data.is_for_sale = true;

@@ -17,8 +17,9 @@ pub fn cancel_nft_sale(
     let accounts_iter = &mut accounts.iter();
     let writing_account = next_account_info(accounts_iter)?;
     let signer = next_account_info(accounts_iter)?;
-    let mint_account = next_account_info(accounts_iter)?;
+    let token_account = next_account_info(accounts_iter)?;
     let spl_token_account = next_account_info(accounts_iter)?;
+
     if writing_account.owner != program_id {
         msg!("Writter account isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
@@ -31,22 +32,14 @@ pub fn cancel_nft_sale(
     let data_present = TokenData::try_from_slice(*writing_account.try_borrow_data()?)
         .expect("Failed to get the token data");
 
-    if data_present.mint_id != *mint_account.key {
-        msg!("Invalid Instruction data data_present.mint_id != *mint_account.key");
-        return Err(ProgramError::InvalidAccountData);
-    }
-    if *mint_account.owner != spl_token::id() {
-        msg!("Is not spl token account owned");
-        return Err(ProgramError::InvalidAccountData);
-    }
-    if data_present.owner != *signer.key{
+    if data_present.owner != *signer.key {
         msg!("Do not own the key can't cancel");
         return Err(ProgramError::InvalidAccountData);
     }
 
     let set_update_auth = spl_token::instruction::set_authority(
         spl_token_account.key,
-        mint_account.key,
+        token_account.key,
         Some(signer.key),
         spl_token::instruction::AuthorityType::AccountOwner,
         writing_account.key,
@@ -55,8 +48,12 @@ pub fn cancel_nft_sale(
 
     invoke_signed(
         &set_update_auth,
-        &[spl_token_account.to_owned()],
-        &[&["carddata".as_bytes()]],
+        &[
+            spl_token_account.to_owned(),
+            token_account.to_owned(),
+            writing_account.to_owned(),
+        ],
+        &[&[data_present.seed.as_bytes()]],
     )?;
 
     Ok(())

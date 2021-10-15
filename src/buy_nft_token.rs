@@ -21,11 +21,8 @@ pub fn but_nft_token(
     let writing_account = next_account_info(accounts_iter)?;
     let signer = next_account_info(accounts_iter)?;
     let pay_with = next_account_info(accounts_iter)?;
-    let mint_account = next_account_info(accounts_iter)?;
-
+    let token_account = next_account_info(accounts_iter)?;
     let token_program_id = next_account_info(accounts_iter)?;
-    let source_account = next_account_info(accounts_iter)?;
-
     let owners_account = next_account_info(accounts_iter)?;
 
     if writing_account.owner != program_id || pay_with.owner != program_id {
@@ -38,10 +35,7 @@ pub fn but_nft_token(
     }
     let mut data_present = TokenData::try_from_slice(*writing_account.try_borrow_data()?)
         .expect("Failed to get the token data");
-    if data_present.mint_id != *mint_account.key {
-        msg!("Invalid account data");
-        return Err(ProgramError::InvalidAccountData);
-    }
+
     if !data_present.is_for_sale {
         msg!("Not for sale");
         return Err(ProgramError::InvalidAccountData);
@@ -76,7 +70,7 @@ pub fn but_nft_token(
 
     let instruction = spl_token::instruction::set_authority(
         token_program_id.key,
-        source_account.key,
+        token_account.key,
         Some(signer.key),
         spl_token::instruction::AuthorityType::AccountOwner,
         writing_account.key,
@@ -85,12 +79,12 @@ pub fn but_nft_token(
     invoke_signed(
         &instruction,
         &[
-            source_account.to_owned(),
-            signer.to_owned(),
             token_program_id.to_owned(),
+            signer.to_owned(),
             writing_account.to_owned(),
+            token_account.to_owned(),
         ],
-        &[&["carddata".as_bytes()]],
+        &[&[data_present.seed.as_bytes()]],
     )?;
 
     **owners_account.try_borrow_mut_lamports()? += **pay_with.try_borrow_lamports()?;
