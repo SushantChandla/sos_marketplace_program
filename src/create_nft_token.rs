@@ -33,7 +33,7 @@ pub fn create_nft_token(
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    let admin1 = Pubkey::from_str("3KNyVqUuQkfr2V1BAShtYfcZiREyVaPTtjPAQfbZSUV2")
+    let admin1 = Pubkey::from_str("A6B1EecEteWXW9bXA5pD3odSve9sMLF9GYcxQHegBFKq")
         .expect("Failed to convert the pub key admin1");
 
     let admin2 = Pubkey::from_str("DGqXoguiJnAy8ExJe9NuZpWrnQMCV14SdEdiMEdCfpmB")
