@@ -12,6 +12,7 @@ use solana_program::{
 
 use crate::token_data::TokenData;
 
+
 pub fn but_nft_token(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -24,7 +25,9 @@ pub fn but_nft_token(
     let token_account = next_account_info(accounts_iter)?;
     let token_program_id = next_account_info(accounts_iter)?;
     let owners_account = next_account_info(accounts_iter)?;
+    let pda_account = next_account_info(accounts_iter)?;
 
+    msg!("Buy_nft_token");
     if writing_account.owner != program_id || pay_with.owner != program_id {
         msg!("Writter account or pay_with isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
@@ -41,7 +44,7 @@ pub fn but_nft_token(
         return Err(ProgramError::InvalidAccountData);
     }
     data_present.is_for_sale = false;
-    if **pay_with.try_borrow_lamports()? == data_present.price as u64 {
+    if **pay_with.try_borrow_lamports()? != data_present.price as u64 {
         msg!("Insufficent balance");
         return Err(ProgramError::InsufficientFunds);
     }
@@ -60,12 +63,17 @@ pub fn but_nft_token(
     let admin2 = Pubkey::from_str("DGqXoguiJnAy8ExJe9NuZpWrnQMCV14SdEdiMEdCfpmB")
         .expect("Failed to convert the pub key admin2");
 
-    if data_present.owner != *owners_account.key
+    if !(data_present.owner != *owners_account.key
         || data_present.owner != admin1
-        || data_present.owner != admin2
+        || data_present.owner != admin2)
     {
         msg!("Wrong owners account");
         return Err(ProgramError::InvalidAccountData);
+    }
+    let (pda, bump_seed) =
+        Pubkey::find_program_address(&[data_present.seed.as_bytes()], program_id);
+    if &pda != pda_account.key {
+        msg!("unexpected account");
     }
 
     let instruction = spl_token::instruction::set_authority(
@@ -73,9 +81,10 @@ pub fn but_nft_token(
         token_account.key,
         Some(signer.key),
         spl_token::instruction::AuthorityType::AccountOwner,
-        writing_account.key,
-        &[writing_account.key],
+        &pda,
+        &[&pda],
     )?;
+
     invoke_signed(
         &instruction,
         &[
@@ -83,8 +92,9 @@ pub fn but_nft_token(
             signer.to_owned(),
             writing_account.to_owned(),
             token_account.to_owned(),
+            pda_account.to_owned(),
         ],
-        &[&[data_present.seed.as_bytes()]],
+        &[&[&data_present.seed.as_bytes()[..], &[bump_seed]]], 
     )?;
 
     **owners_account.try_borrow_mut_lamports()? += **pay_with.try_borrow_lamports()?;

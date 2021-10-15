@@ -8,6 +8,7 @@ use solana_program::{
 mod buy_nft_token;
 mod cancel_nft_token;
 mod upgrade_nft_token;
+
 fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -45,10 +46,3 @@ fn process_instruction(
     }
 }
 entrypoint!(process_instruction);
-
-// Sanity tests
-#[cfg(test)]
-mod test {
-    #[test]
-    fn test_sanity() {}
-}

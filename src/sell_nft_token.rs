@@ -23,6 +23,8 @@ pub fn sell_nft_token(
     let signer = next_account_info(accounts_iter)?;
     let token_account = next_account_info(accounts_iter)?;
     let spl_token_account = next_account_info(accounts_iter)?;
+    let pda_account = next_account_info(accounts_iter)?;
+
     if writing_account.owner != program_id {
         msg!("Writter account isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
@@ -38,17 +40,18 @@ pub fn sell_nft_token(
     let set_update_auth = spl_token::instruction::set_authority(
         spl_token_account.key,
         token_account.key,
-        Some(writing_account.key),
+        Some(pda_account.key),
         spl_token::instruction::AuthorityType::AccountOwner,
         signer.key,
         &[signer.key],
     )?;
+
     invoke(
         &set_update_auth,
         &[
             spl_token_account.to_owned(),
             token_account.to_owned(),
-            writing_account.to_owned(),
+            pda_account.to_owned(),
             signer.to_owned(),
         ],
     )?;
