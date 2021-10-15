@@ -14,6 +14,7 @@ pub struct TokenData {
     pub attackpoints: u32,
     pub land_required_to_stand: u32,
     pub uri:String,
+    pub image_uri:String,
     pub abilities: Vec<Ability>,
     pub mint_id: Pubkey,
     pub owner: Pubkey,
